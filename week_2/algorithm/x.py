@@ -1,3 +1,4 @@
+#used held karp algorithm
 import math
 from itertools import combinations
 
@@ -6,25 +7,18 @@ def euclid(a, b):
 
 def held_karp_path(start, pts):
     """
-    Exact TSP path (start -> visit all pts exactly once, no return),
-    using Held-Karp DP. pts is a list of points (tuples).
-    Returns best_order (list of pts in visiting order).
-    Complexity: O(n^2 * 2^n). Use for n <= ~12.
+    Complexity: O(n^2 * 2^n).For n <= 12.
     """
     n = len(pts)
     if n == 0:
         return []
-    # index pts 0..n-1
-    # DP[mask][i] = minimal cost to reach i with visited mask (mask includes i)
     INF = float('inf')
     size = 1 << n
     dp = [[INF]*n for _ in range(size)]
     parent = [[-1]*n for _ in range(size)]
-    # base: directly from start to each i
     for i in range(n):
         m = 1 << i
         dp[m][i] = euclid(start, pts[i])
-    # iterate masks
     for mask in range(size):
         for last in range(n):
             if not (mask & (1<<last)): 
@@ -42,7 +36,7 @@ def held_karp_path(start, pts):
                     dp[nxt_mask][nxt] = cost
                     parent[nxt_mask][nxt] = last
     full_mask = size - 1
-    # find best endpoint (we don't return to start)
+    # find best endpoint
     best_cost = INF
     best_last = -1
     for i in range(n):
@@ -58,7 +52,7 @@ def held_karp_path(start, pts):
         prev = parent[mask][cur]
         mask ^= (1<<cur)
         cur = prev
-    order.reverse()  # now order is visiting order from first visited -> last visited
+    order.reverse()  
     return order
 
 def nearest_neighbor(start, pts):
@@ -81,11 +75,6 @@ def nearest_neighbor(start, pts):
     return order
 
 def two_opt(order, start):
-    """
-    2-opt improvement on a path (order is visiting order).
-    This improves without changing the start; path is not a cycle.
-    Returns improved order.
-    """
     def path_length(ordr):
         if not ordr:
             return 0.0
@@ -118,18 +107,6 @@ def two_opt(order, start):
     return order
 
 def optimize_destinations(destinations, exact_threshold=12):
-    """
-    destinations: list of tuples [(x0,y0), (x1,y1), ...]
-      where destinations[0] is START coordinate.
-    Returns: a new list in the same format where the first element is the same start,
-             and the remaining elements are ordered so that destination.pop() yields
-             the *next* target to visit (i.e., last element is immediate next).
-    Strategy:
-      - Extract start and targets.
-      - If small number of targets (<= exact_threshold), use Held-Karp exact path.
-      - Else use nearest-neighbor + 2-opt.
-      - Then reverse the visiting order and produce final list [start, ..., last, first].
-    """
     if not destinations:
         return []
     start = destinations[0]
@@ -142,15 +119,13 @@ def optimize_destinations(destinations, exact_threshold=12):
     else:
         visiting_order = nearest_neighbor(start, targets)
         visiting_order = two_opt(visiting_order, start)
-
-    # visiting_order is [first_target, second_target, ... last_target]
-    # but code uses pop() to get next location, so reverse them:
     reversed_for_pop = list(reversed(visiting_order))
     return [start] + reversed_for_pop
 
 # ---------------------
 # Example usage:
 if __name__ == "__main__":
+    #example coordinates
     destinations = [
         (0,0),   # start
         (5,2),
@@ -160,7 +135,7 @@ if __name__ == "__main__":
         (9,0)
     ]
     new_list = optimize_destinations(destinations)
-    print("Optimized destination list (first is start). Rover should pop() to get next target:")
+    print("Optimized destination list (first is start)")
     print(new_list)
     # simulate popping sequence
     sim = new_list.copy()
